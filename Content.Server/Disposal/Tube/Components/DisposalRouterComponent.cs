@@ -1,7 +1,6 @@
 using System.Text;
 using Content.Server.Disposal.Unit.Components;
 using Content.Server.UserInterface;
-using Content.Shared.Sound;
 using Robust.Server.GameObjects;
 using Robust.Shared.Audio;
 using Robust.Shared.Physics;
@@ -15,6 +14,8 @@ namespace Content.Server.Disposal.Tube.Components
     [ComponentReference(typeof(DisposalTubeComponent))]
     public sealed class DisposalRouterComponent : DisposalJunctionComponent
     {
+        public override string ContainerId => "DisposalRouter";
+
         [Dependency] private readonly IEntityManager _entMan = default!;
 
         [ViewVariables]

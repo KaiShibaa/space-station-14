@@ -46,7 +46,6 @@ namespace Content.Shared.Interaction
         [Dependency] private readonly RotateToFaceSystem _rotateToFaceSystem = default!;
         [Dependency] private readonly SharedPopupSystem _popupSystem = default!;
         [Dependency] private readonly UseDelaySystem _useDelay = default!;
-        [Dependency] private readonly SharedPhysicsSystem _physicsSystem = default!;
         [Dependency] protected readonly SharedContainerSystem ContainerSystem = default!;
 
         private const CollisionGroup InRangeUnobstructedMask
@@ -230,7 +229,14 @@ namespace Content.Shared.Interaction
 
             // Does the user have hands?
             if (!TryComp(user, out SharedHandsComponent? hands) || hands.ActiveHand == null)
+            {
+                if (target != null)
+                {
+                    var ev = new InteractNoHandEvent(user, target.Value);
+                    RaiseLocalEvent(user, ev, true);
+                }
                 return;
+            }
 
             var inRangeUnobstructed = target == null
                 ? !checkAccess || InRangeUnobstructed(user, coordinates)
@@ -470,7 +476,7 @@ namespace Content.Shared.Interaction
 
             bool ignoreAnchored = false;
 
-            if (HasComp<SharedItemComponent>(target) && TryComp(target, out PhysicsComponent? physics) && physics.CanCollide)
+            if (HasComp<ItemComponent>(target) && TryComp(target, out PhysicsComponent? physics) && physics.CanCollide)
             {
                 // If the target is an item, we ignore any colliding entities. Currently done so that if items get stuck
                 // inside of walls, users can still pick them up.
@@ -600,7 +606,7 @@ namespace Content.Shared.Interaction
         /// Finds components with the InteractUsing interface and calls their function
         /// NOTE: Does not have an InRangeUnobstructed check
         /// </summary>
-        public async void InteractUsing(
+        public void InteractUsing(
             EntityUid user,
             EntityUid used,
             EntityUid target,
@@ -623,23 +629,13 @@ namespace Content.Shared.Interaction
             if (interactUsingEvent.Handled)
                 return;
 
-            var interactUsingEventArgs = new InteractUsingEventArgs(user, clickLocation, used, target);
-            var interactUsings = AllComps<IInteractUsing>(target).OrderByDescending(x => x.Priority);
-
-            foreach (var interactUsing in interactUsings)
-            {
-                // If an InteractUsing returns a status completion we finish our interaction
-                if (await interactUsing.InteractUsing(interactUsingEventArgs))
-                    return;
-            }
-
             InteractDoAfter(user, used, target, clickLocation, canReach: true);
         }
 
         /// <summary>
         ///     Used when clicking on an entity resulted in no other interaction. Used for low-priority interactions.
         /// </summary>
-        public async void InteractDoAfter(EntityUid user, EntityUid used, EntityUid? target, EntityCoordinates clickLocation, bool canReach)
+        public void InteractDoAfter(EntityUid user, EntityUid used, EntityUid? target, EntityCoordinates clickLocation, bool canReach)
         {
             if (target is {Valid: false})
                 target = null;
@@ -648,15 +644,6 @@ namespace Content.Shared.Interaction
             RaiseLocalEvent(used, afterInteractEvent, false);
             if (afterInteractEvent.Handled)
                 return;
-
-            var afterInteractEventArgs = new AfterInteractEventArgs(user, clickLocation, target, canReach);
-            var afterInteracts = AllComps<IAfterInteract>(used).OrderByDescending(x => x.Priority).ToList();
-
-            foreach (var afterInteract in afterInteracts)
-            {
-                if (await afterInteract.AfterInteract(afterInteractEventArgs))
-                    return;
-            }
 
             if (target == null)
                 return;
@@ -718,20 +705,9 @@ namespace Content.Shared.Interaction
 
             var activateMsg = new ActivateInWorldEvent(user, used);
             RaiseLocalEvent(used, activateMsg, true);
-            if (activateMsg.Handled)
-            {
-                _useDelay.BeginDelay(used, delayComponent);
-                _adminLogger.Add(LogType.InteractActivate, LogImpact.Low, $"{ToPrettyString(user):user} activated {ToPrettyString(used):used}");
-                return true;
-            }
-
-            var activatable = AllComps<IActivate>(used).FirstOrDefault();
-            if (activatable == null)
+            if (!activateMsg.Handled)
                 return false;
 
-            activatable.Activate(new ActivateEventArgs(user, used));
-
-            // No way to check success.
             _useDelay.BeginDelay(used, delayComponent);
             _adminLogger.Add(LogType.InteractActivate, LogImpact.Low, $"{ToPrettyString(user):user} activated {ToPrettyString(used):used}");
             return true;

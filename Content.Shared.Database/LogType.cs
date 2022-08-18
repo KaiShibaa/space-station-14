@@ -73,4 +73,7 @@ public enum LogType
     // haha so funny
     Emag = 69,
     Gib = 70,
+    Identity = 71,
+    CableCut = 72,
+    StorePurchase = 73,
 }

@@ -1,6 +1,5 @@
 using Content.Server.Disposal.Unit.Components;
 using Content.Server.UserInterface;
-using Content.Shared.Sound;
 using Robust.Server.GameObjects;
 using Robust.Shared.Audio;
 using Robust.Shared.Physics;
@@ -15,6 +14,8 @@ namespace Content.Server.Disposal.Tube.Components
     public sealed class DisposalTaggerComponent : DisposalTransitComponent
     {
         [Dependency] private readonly IEntityManager _entMan = default!;
+
+        public override string ContainerId => "DisposalTagger";
 
         [ViewVariables(VVAccess.ReadWrite)]
         private string _tag = "";

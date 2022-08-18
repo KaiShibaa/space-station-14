@@ -31,6 +31,10 @@
     proto: ShellShotgun
     soundInsert:
       path: /Audio/Weapons/Guns/MagIn/shotgun_insert.ogg
+  - type: ContainerContainer
+    containers:
+      ballistic-ammo: !type:Container
+        ents: []
 
 - type: entity
   name: Bulldog
@@ -94,6 +98,9 @@
     fireRate: 8
   - type: BallisticAmmoProvider
     capacity: 2
+  - type: Construction
+    graph: ShotgunSawn
+    node: shotgundoublebarreled
 
 - type: entity
   name: Enforcer
@@ -135,3 +142,6 @@
     fireRate: 4
   - type: BallisticAmmoProvider
     capacity: 2
+  - type: Construction
+    graph: ShotgunSawn
+    node: shotgunsawn
